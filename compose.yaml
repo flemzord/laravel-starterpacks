@@ -1,0 +1,42 @@
+volumes:
+  data-postgres:
+    driver: local
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www/html
+
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: php artisan queue:listen --verbose
+    volumes:
+      - .:/var/www/html
+
+  postgres:
+    image: "postgres:18-alpine"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: "app"
+      POSTGRES_PASSWORD: "app"
+      POSTGRES_DB: "app"
+    volumes:
+      - data-postgres:/home/postgres/pgdata/data
+
+  mailpit:
+    image: "axllent/mailpit"
+    ports:
+      - "8025:8025"
+      - "1025:1025"
